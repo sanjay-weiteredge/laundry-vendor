@@ -1,0 +1,34 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/auth/login";
+import Booking from "./pages/booking/Booking";
+import Profile from "./pages/profile/Profile";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route
+          path="/booking"
+          element={
+            <ProtectedRoute>
+              <Booking />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
