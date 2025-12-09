@@ -16,6 +16,7 @@ import {
   getStoreOrders,
   updateOrderItems,
   updateOrderStatus,
+  getServices,
 } from "../../services/api";
 
 const STATUS_CONFIG = {
@@ -223,6 +224,11 @@ const Booking = () => {
   const [modalError, setModalError] = useState("");
   const [savingItems, setSavingItems] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [services, setServices] = useState([]);
+  const [servicesError, setServicesError] = useState("");
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [newServiceId, setNewServiceId] = useState("");
+  const [removedServiceIds, setRemovedServiceIds] = useState([]);
 
   const handleCategoryQuantityChange = (categoryKey, delta) => {
     setSelectedBooking((prev) => {
@@ -261,8 +267,64 @@ const Booking = () => {
     });
   };
 
+  const handleCategoryServiceChange = () => {};
+
+  const handleAddServiceLine = () => {
+    if (!newServiceId) return;
+    const service = services.find((s) => String(s.id) === String(newServiceId));
+    if (!service) return;
+
+    setSelectedBooking((prev) => {
+      if (!prev) return prev;
+      const newCategory = {
+        key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: null,
+        serviceId: service.id,
+        label: service.name || "Service",
+        description: service.description || "Added service",
+        quantity: 0,
+        unitPrice: Number(service.price ?? 0),
+        totalAmount: null,
+      };
+      return {
+        ...prev,
+        categories: [...(prev.categories || []), newCategory],
+      };
+    });
+
+    setNewServiceId("");
+    setModalError("");
+  };
+
+  const handleRemoveCategory = (categoryKey) => {
+    setSelectedBooking((prev) => {
+      if (!prev) return prev;
+      const categoryToRemove = (prev.categories || []).find((cat) => {
+        const currentKey = cat.key ?? cat.id ?? cat.label;
+        return currentKey === categoryKey;
+      });
+
+      const serviceIdToRemove =
+        categoryToRemove?.serviceId ?? categoryToRemove?.id ?? null;
+      if (serviceIdToRemove) {
+        setRemovedServiceIds((prevRemoved) => [
+          ...new Set([...prevRemoved, serviceIdToRemove]),
+        ]);
+      }
+
+      return {
+        ...prev,
+        categories: (prev.categories || []).filter((category) => {
+          const currentKey = category.key ?? category.id ?? category.label;
+          return currentKey !== categoryKey;
+        }),
+      };
+    });
+  };
+
   const openBookingDetails = (booking) => {
     setModalError("");
+    setRemovedServiceIds([]);
     setSelectedBooking({
       ...booking,
       categories: (booking.categories || []).map((category) => ({
@@ -280,23 +342,31 @@ const Booking = () => {
       return;
     }
 
-    const payload = (selectedBooking.categories || [])
-      .map((category) => {
-        // Use totalAmount from category if set, otherwise calculate
-        const totalAmount = category.totalAmount !== null && category.totalAmount !== undefined
+    const activeItems = (selectedBooking.categories || []).map((category) => {
+      const totalAmount =
+        category.totalAmount !== null && category.totalAmount !== undefined
           ? Number(category.totalAmount)
           : (category.quantity ?? 0) * (category.unitPrice ?? 0);
-        const item = {
-          serviceId: Number(category.serviceId ?? category.id),
-          quantity: Number(category.quantity ?? 0),
-          total_amount: totalAmount,
-        };
-        console.log('Saving order item:', item); // Debug log
-        return item;
-      })
-      .filter((item) => item.serviceId && item.quantity > 0);
-    
-    console.log('Payload being sent:', payload); // Debug log
+      const item = {
+        serviceId: Number(category.serviceId ?? category.id),
+        quantity: Number(category.quantity ?? 0),
+        total_amount: totalAmount,
+      };
+      console.log("Saving order item:", item);
+      return item;
+    });
+
+    const removalItems = removedServiceIds.map((serviceId) => ({
+      serviceId: Number(serviceId),
+      quantity: 0,
+      total_amount: 0,
+    }));
+
+    const payload = [...activeItems, ...removalItems].filter(
+      (item) => item.serviceId && item.quantity >= 0
+    );
+
+    console.log("Payload being sent:", payload);
 
     if (payload.length === 0) {
       setModalError("No services available to update.");
@@ -323,6 +393,7 @@ const Booking = () => {
       const updatedBooking = mapOrderToCard(updatedOrder);
       console.log('Mapped booking categories:', updatedBooking.categories); // Debug log
       setSelectedBooking(updatedBooking);
+      setRemovedServiceIds([]);
     } catch (apiError) {
       setModalError(
         apiError.message || "Failed to update item quantities."
@@ -362,6 +433,26 @@ const Booking = () => {
       setSavingStatus(false);
     }
   };
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      const token = localStorage.getItem("vendorToken");
+      if (!token) return;
+      setServicesLoading(true);
+      setServicesError("");
+      try {
+        const response = await getServices({ token, audience: "vendor" });
+        setServices(response.data || []);
+      } catch (apiError) {
+        setServicesError(apiError.message || "Unable to load services.");
+        setServices([]);
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -504,6 +595,7 @@ const Booking = () => {
         onHide={() => {
           setSelectedBooking(null);
           setModalError("");
+          setRemovedServiceIds([]);
         }}
         size="lg"
         centered
@@ -599,6 +691,48 @@ const Booking = () => {
                   <Card className="border-0 bg-light h-100">
                     <Card.Body>
                       <p className="text-muted">Items & categories</p>
+                      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <Form.Select
+                          size="sm"
+                          style={{ width: "220px" }}
+                          disabled={servicesLoading || services.length === 0}
+                          value={newServiceId}
+                          onChange={(e) => setNewServiceId(e.target.value)}
+                        >
+                          <option value="">
+                            {servicesLoading
+                              ? "Loading services..."
+                              : services.length === 0
+                              ? "No services available"
+                              : "Select service to add"}
+                          </option>
+                          {services.map((svc) => (
+                            <option key={svc.id} value={svc.id}>
+                              {svc.name}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Button
+                          size="sm"
+                          variant="outline-primary"
+                          disabled={
+                            servicesLoading || services.length === 0 || !newServiceId
+                          }
+                          onClick={handleAddServiceLine}
+                        >
+                          Add service
+                        </Button>
+                      </div>
+                      {servicesError && (
+                        <div className="text-danger small mb-2">
+                          {servicesError}
+                        </div>
+                      )}
+                      {servicesLoading && (
+                        <div className="text-muted small mb-2">
+                          Loading services...
+                        </div>
+                      )}
                       {modalError && (
                         <Alert variant="danger" className="py-2">
                           {modalError}
@@ -625,13 +759,23 @@ const Booking = () => {
                                       {category.description}
                                     </p>
                                   </div>
-                                  <div className="text-end">
-                                    <small className="text-muted d-block">
-                                      {formatCurrency(category.unitPrice || 0)} each
-                                    </small>
-                                    <span className="fw-semibold">
-                                      {formatCurrency(lineTotal)}
-                                    </span>
+                                  <div className="d-flex align-items-start gap-2">
+                                    <div className="text-end">
+                                      <small className="text-muted d-block">
+                                        {formatCurrency(category.unitPrice || 0)} each
+                                      </small>
+                                      <span className="fw-semibold">
+                                        {formatCurrency(lineTotal)}
+                                      </span>
+                                    </div>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() => handleRemoveCategory(categoryKey)}
+                                      title="Remove item"
+                                    >
+                                      ✕
+                                    </Button>
                                   </div>
                                 </div>
                                 <div className="d-flex align-items-center gap-2 mt-2">
@@ -713,6 +857,7 @@ const Booking = () => {
                 onClick={() => {
                   setSelectedBooking(null);
                   setModalError("");
+                  setRemovedServiceIds([]);
                 }}
               >
                 Done

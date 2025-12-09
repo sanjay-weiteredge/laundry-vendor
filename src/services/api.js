@@ -120,3 +120,26 @@ export const updateStoreStatus = async ({ token, status }) => {
   return data;
 };
 
+export const getServices = async ({ token, audience = "vendor" } = {}) => {
+  const query = new URLSearchParams();
+  if (audience) query.set("audience", audience);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/services/all${query.toString() ? `?${query}` : ""}`,
+    {
+      headers: {
+        ...jsonHeaders(),
+        ...authHeaders(token),
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to load services.");
+  }
+
+  return data;
+};
+
