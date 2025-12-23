@@ -143,3 +143,41 @@ export const getServices = async ({ token, audience = "vendor" } = {}) => {
   return data;
 };
 
+export const setRevenuePassword = async ({ token, currentPassword, newPassword }) => {
+  const response = await fetch(`${API_BASE_URL}/api/stores/stores/revenue/set-password`, {
+    method: "POST",
+    headers: {
+      ...jsonHeaders(),
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to update revenue password.");
+  }
+
+  return data;
+};
+
+export const verifyRevenuePassword = async ({ token, revenuePassword }) => {
+  const response = await fetch(`${API_BASE_URL}/api/stores/stores/revenue/verify`, {
+    method: "POST",
+    headers: {
+      ...jsonHeaders(),
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({ revenuePassword }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to verify revenue password.");
+  }
+
+  return data;
+};
+

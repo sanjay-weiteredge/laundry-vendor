@@ -11,7 +11,10 @@ import {
   Spinner,
 } from "react-bootstrap";
 import AppNavbar from "../../components/Navbar";
-import { getStoreProfile, updateStoreStatus } from "../../services/api";
+import {
+  getStoreProfile,
+  updateStoreStatus,
+} from "../../services/api";
 
 const formatAddress = (store) => {
   if (!store) return "Address not available.";
@@ -50,18 +53,6 @@ const formatDate = (value) => {
     dateStyle: "medium",
     timeStyle: "short",
   });
-};
-
-const formatCurrency = (value) => {
-  try {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(Number(value || 0));
-  } catch {
-    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
-  }
 };
 
 const Profile = () => {
@@ -190,40 +181,6 @@ const Profile = () => {
             </div>
           ) : profile ? (
             <Row className="g-4">
-              <Col xs={12}>
-                <Row className="g-3">
-                  <Col md={4}>
-                    <Card className="shadow-sm border-0 h-100">
-                      <Card.Body>
-                        <small className="text-muted d-block">Current month revenue</small>
-                        <h4 className="mb-0 mt-1">
-                          {formatCurrency(profile?.revenue?.currentMonth)}
-                        </h4>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col md={4}>
-                    <Card className="shadow-sm border-0 h-100">
-                      <Card.Body>
-                        <small className="text-muted d-block">Last 90 days revenue</small>
-                        <h4 className="mb-0 mt-1">
-                          {formatCurrency(profile?.revenue?.last90Days)}
-                        </h4>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col md={4}>
-                    <Card className="shadow-sm border-0 h-100">
-                      <Card.Body>
-                        <small className="text-muted d-block">Last year revenue</small>
-                        <h4 className="mb-0 mt-1">
-                          {formatCurrency(profile?.revenue?.lastYear)}
-                        </h4>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-              </Col>
               <Col lg={8}>
                 <Card className="shadow-sm border-0 mb-4">
                   <Card.Body>

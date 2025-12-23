@@ -25,6 +25,9 @@ const AppNavbar = () => {
             </Nav.Link> */}
           </Nav>
           <Nav>
+            <Nav.Link as={NavLink} to="/revenue">
+              Revenue
+            </Nav.Link>
             <Nav.Link as={NavLink} to="/profile">
               Profile
             </Nav.Link>

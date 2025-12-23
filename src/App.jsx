@@ -3,6 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/auth/login";
 import Booking from "./pages/booking/Booking";
 import Profile from "./pages/profile/Profile";
+import Revenue from "./pages/revenue/Revenue";
 
 function App() {
   return (
@@ -22,6 +23,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/revenue"
+          element={
+            <ProtectedRoute>
+              <Revenue />
             </ProtectedRoute>
           }
         />

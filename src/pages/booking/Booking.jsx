@@ -30,7 +30,7 @@ const STATUS_CONFIG = {
   cancelled: { variant: "danger", label: "Cancelled" },
 };
 
-const STATUS_OPTIONS = ["all", ...Object.keys(STATUS_CONFIG)];
+const STATUS_OPTIONS = ["all", "express", ...Object.keys(STATUS_CONFIG)];
 
 const formatDateTime = (value, options) => {
   if (!value) return "Not scheduled";
@@ -193,6 +193,7 @@ const mapOrderToCard = (order) => {
     weight: `${totalItems || 0} ${totalItems === 1 ? "item" : "items"}`,
     status: order.order_status || "pending",
     date: formatDateTime(order.created_at, { timeStyle: undefined }),
+    isExpress: Boolean(order.is_express || order.isExpress),
     userName: order.user?.name || order.delivery_address?.full_name || "Customer",
     userPhone: order.user?.phone_number || order.delivery_address?.phone || "",
     userEmail: order.user?.email || "",
@@ -467,7 +468,8 @@ const Booking = () => {
       setError("");
 
       try {
-        const response = await getStoreOrders({ token, status: statusFilter });
+        const statusParam = statusFilter === "express" ? "all" : statusFilter;
+        const response = await getStoreOrders({ token, status: statusParam });
         setOrders(response.data || []);
       } catch (apiError) {
         setError(apiError.message);
@@ -481,14 +483,18 @@ const Booking = () => {
   }, [statusFilter]);
 
   const bookings = useMemo(() => {
-    const mapped = orders.map(mapOrderToCard);
+    const filteredOrders =
+      statusFilter === "express"
+        ? orders.filter((order) => order.is_express || order.isExpress)
+        : orders;
+    const mapped = filteredOrders.map(mapOrderToCard);
     // Sort so latest created orders appear first
     return mapped.sort((a, b) => {
       const aTime = new Date(a.rawCreatedAt || 0).getTime();
       const bTime = new Date(b.rawCreatedAt || 0).getTime();
       return bTime - aTime;
     });
-  }, [orders]);
+  }, [orders, statusFilter]);
 
   return (
     <>
@@ -508,13 +514,15 @@ const Booking = () => {
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option === "all"
-                    ? "All statuses"
-                    : STATUS_CONFIG[option]?.label || option}
-                </option>
-              ))}
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option === "all"
+                        ? "All statuses"
+                        : option === "express"
+                        ? "Express orders"
+                        : STATUS_CONFIG[option]?.label || option}
+                    </option>
+                  ))}
             </Form.Select>
           </div>
 
@@ -540,13 +548,21 @@ const Booking = () => {
                     <Card
                       className="shadow-sm h-100 border-0 position-relative hover-overlay"
                       onClick={() => openBookingDetails(booking)}
-                      style={{ cursor: "pointer" }}
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: booking.isExpress ? "#fff4e5" : undefined,
+                      }}
                     >
                       <Card.Body>
                         <div className="d-flex justify-content-between align-items-start mb-2">
                           <div>
                             <p className="text-muted mb-1">{booking.date}</p>
                             <h5 className="mb-0">{booking.customer}</h5>
+                            {booking.isExpress && (
+                              <div className="small text-warning fw-semibold">
+                                Express service
+                              </div>
+                            )}
                             <small className="text-muted">
                               {booking.userName}
                               {booking.userPhone ? ` · ${booking.userPhone}` : ""}
