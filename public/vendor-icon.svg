@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Vendor Dashboard">
+  <defs>
+    <linearGradient id="peach" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f08383"/>
+      <stop offset="100%" stop-color="#f49a9a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#peach)"/>
+  <rect x="120" y="96" width="272" height="320" rx="24" fill="#ffffff"/>
+  <rect x="144" y="120" width="224" height="36" rx="12" fill="#f08383"/>
+  <rect x="144" y="176" width="224" height="28" rx="8" fill="#eaeaea"/>
+  <rect x="144" y="220" width="224" height="28" rx="8" fill="#eaeaea"/>
+  <rect x="144" y="264" width="160" height="28" rx="8" fill="#eaeaea"/>
+  <circle cx="336" cy="272" r="32" fill="#f08383"/>
+  <path d="M336 252a12 12 0 1 1 0 24a12 12 0 0 1 0-24zm-18 40c0-10 36-10 36 0v8h-36z" fill="#ffffff"/>
+</svg>
+
+
