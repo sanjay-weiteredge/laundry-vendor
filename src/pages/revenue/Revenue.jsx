@@ -15,6 +15,7 @@ import {
   getStoreProfile,
   setRevenuePassword,
   verifyRevenuePassword,
+  getTransactionHistory,
 } from "../../services/api";
 
 const formatCurrency = (value) => {
@@ -27,6 +28,14 @@ const formatCurrency = (value) => {
   } catch {
     return `₹${Number(value || 0).toLocaleString("en-IN")}`;
   }
+};
+
+const formatDate = (value) => {
+  if (!value) return "–";
+  return new Date(value).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 };
 
 const Revenue = () => {
@@ -59,6 +68,11 @@ const Revenue = () => {
   const [revenueSetError, setRevenueSetError] = useState("");
   const [revenueSetMessage, setRevenueSetMessage] = useState("");
   const [settingRevenuePassword, setSettingRevenuePassword] = useState(false);
+
+  const [transactionPeriod, setTransactionPeriod] = useState("30");
+  const [transactionData, setTransactionData] = useState(null);
+  const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionError, setTransactionError] = useState("");
 
   const revenueCards = useMemo(() => {
     const lockedDisplay = "●●●";
@@ -120,6 +134,33 @@ const Revenue = () => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  const fetchTransactionHistory = useCallback(async () => {
+    const token = localStorage.getItem("vendorToken");
+    if (!token) {
+      setTransactionError("Missing authentication token. Please log in again.");
+      return;
+    }
+
+    setTransactionLoading(true);
+    setTransactionError("");
+
+    try {
+      const response = await getTransactionHistory({ token, period: transactionPeriod });
+      setTransactionData(response.data);
+    } catch (apiError) {
+      setTransactionError(apiError.message || "Unable to load transaction history.");
+      setTransactionData(null);
+    } finally {
+      setTransactionLoading(false);
+    }
+  }, [transactionPeriod]);
+
+  useEffect(() => {
+    if (revenueUnlocked || !hasRevenuePassword) {
+      fetchTransactionHistory();
+    }
+  }, [transactionPeriod, revenueUnlocked, hasRevenuePassword, fetchTransactionHistory]);
 
   const handleVerifyRevenue = async (event) => {
     event.preventDefault();
@@ -371,6 +412,107 @@ const Revenue = () => {
                   </Card.Body>
                 </Card>
               </Col>
+
+              {(revenueUnlocked || !hasRevenuePassword) && (
+                <Col xs={12}>
+                  <Card className="shadow-sm border-0">
+                    <Card.Body>
+                      <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+                        <div>
+                          <h5 className="mb-1">Transaction history</h5>
+                          <small className="text-muted">
+                            View detailed transaction records for delivered orders
+                          </small>
+                        </div>
+                        <Form.Select
+                          style={{ width: "auto", minWidth: "150px" }}
+                          value={transactionPeriod}
+                          onChange={(e) => setTransactionPeriod(e.target.value)}
+                          disabled={transactionLoading}
+                        >
+                          <option value="30">Last 30 days</option>
+                          <option value="90">Last 90 days</option>
+                          <option value="365">Last 365 days</option>
+                        </Form.Select>
+                      </div>
+
+                      {transactionError && (
+                        <Alert variant="danger" className="mb-3">
+                          {transactionError}
+                        </Alert>
+                      )}
+
+                      {transactionLoading ? (
+                        <div className="d-flex justify-content-center py-4">
+                          <Spinner animation="border" role="status" />
+                        </div>
+                      ) : transactionData ? (
+                        <>
+                          <Row className="g-3 mb-4">
+                            <Col md={6}>
+                              <Card className="border-0 bg-light">
+                                <Card.Body>
+                                  <small className="text-muted d-block">Total transactions</small>
+                                  <h4 className="mb-0 mt-1">
+                                    {transactionData.summary?.totalTransactions || 0}
+                                  </h4>
+                                </Card.Body>
+                              </Card>
+                            </Col>
+                            <Col md={6}>
+                              <Card className="border-0 bg-light">
+                                <Card.Body>
+                                  <small className="text-muted d-block">Total revenue</small>
+                                  <h4 className="mb-0 mt-1">
+                                    {formatCurrency(transactionData.summary?.totalRevenue || 0)}
+                                  </h4>
+                                </Card.Body>
+                              </Card>
+                            </Col>
+                          </Row>
+
+                          {transactionData.transactions && transactionData.transactions.length > 0 ? (
+                            <div className="table-responsive">
+                              <table className="table table-hover">
+                                <thead>
+                                  <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Delivered Date</th>
+                                    <th className="text-end">Amount</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {transactionData.transactions.map((transaction, index) => (
+                                    <tr key={transaction.orderId || index}>
+                                      <td>
+                                        <strong>ORD-{transaction.orderId}</strong>
+                                      </td>
+                                      <td>{transaction.userName || "Customer"}</td>
+                                      <td>{formatDate(transaction.deliveredDate)}</td>
+                                      <td className="text-end fw-semibold">
+                                        {formatCurrency(transaction.totalAmount)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <Card className="border-0 bg-light text-center py-4">
+                              <Card.Body>
+                                <p className="text-muted mb-0">
+                                  No transactions found for the selected period.
+                                </p>
+                              </Card.Body>
+                            </Card>
+                          )}
+                        </>
+                      ) : null}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              )}
             </Row>
           ) : (
             <Card className="shadow-sm border-0 text-center py-5">

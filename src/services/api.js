@@ -181,3 +181,23 @@ export const verifyRevenuePassword = async ({ token, revenuePassword }) => {
   return data;
 };
 
+export const getTransactionHistory = async ({ token, period = "30" }) => {
+  const query = new URLSearchParams();
+  if (period) query.set("period", period);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/stores/stores/transactions${query.toString() ? `?${query}` : ""}`,
+    {
+      headers: authHeaders(token),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to load transaction history.");
+  }
+
+  return data;
+};
+
