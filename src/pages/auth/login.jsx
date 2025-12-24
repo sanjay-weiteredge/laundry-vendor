@@ -10,6 +10,7 @@ import {
 } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { storeLogin } from "../../services/api";
+import logo from "../../assets/logo.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -49,13 +50,22 @@ const Login = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center bg-light py-5">
+    <div
+      className="min-vh-100 d-flex align-items-center py-5"
+      style={{ backgroundColor: "#f08383" }}
+    >
       <Container>
         <Row className="justify-content-center">
           <Col sm={10} md={8} lg={5}>
             <Card className="shadow-sm border-0">
               <Card.Body className="p-4">
-                <h2 className="text-center mb-3">Vendor Portal</h2>
+                <div className="text-center mb-3">
+                  <img
+                    src={logo}
+                    alt="Vendor Portal Logo"
+                    style={{ height: 56, objectFit: "contain" }}
+                  />
+                </div>
                 <p className="text-muted text-center mb-4">
                   Sign in to manage bookings, slots, and orders.
                 </p>
@@ -83,16 +93,11 @@ const Login = () => {
                     type="submit"
                     className="w-100"
                     disabled={isSubmitting}
-                    variant="primary"
+                    style={{ backgroundColor: "#f08383", borderColor: "#f08383" }}
                   >
                     {isSubmitting ? "Signing in..." : "Sign in"}
                   </Button>
                 </Form>
-                <div className="text-center mt-4">
-                  <small className="text-muted">
-                    Demo login accepts any credentials.
-                  </small>
-                </div>
               </Card.Body>
             </Card>
           </Col>
