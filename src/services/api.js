@@ -201,3 +201,24 @@ export const getTransactionHistory = async ({ token, period = "30" }) => {
   return data;
 };
 
+export const getTransactionHistoryByDateRange = async ({ token, startDate, endDate }) => {
+  const query = new URLSearchParams();
+  if (startDate) query.set("startDate", startDate);
+  if (endDate) query.set("endDate", endDate);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/stores/stores/transactions/date-range?${query.toString()}`,
+    {
+      headers: authHeaders(token),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to fetch transaction history by date range.");
+  }
+
+  return data;
+};
+
