@@ -169,12 +169,26 @@ const mapOrderToCard = (order) => {
   const paymentStatus = order.payment_status ? ` · ${order.payment_status}` : "";
 
   const addressInfo = formatAddress(order.delivery_address);
-  const pickupStart = order.pickup_scheduled_at ? formatDateTime(order.pickup_scheduled_at) : null;
-  const pickupEnd = order.pickup_slot_end ? formatDateTime(order.pickup_slot_end) : null;
-  const pickupSlot =
-    pickupStart && pickupEnd
-      ? `${pickupStart} → ${pickupEnd}`
-      : pickupStart || pickupEnd || "Not scheduled";
+  const pickupStart = order.pickup_scheduled_at ? new Date(order.pickup_scheduled_at) : null;
+  const pickupEnd = order.pickup_slot_end ? new Date(order.pickup_slot_end) : null;
+
+  let pickupSlot = "Not scheduled";
+  if (order.is_walk_in) {
+    pickupSlot = formatDateTime(order.created_at);
+  } else if (pickupStart && pickupEnd) {
+    const startStr = formatDateTime(pickupStart);
+    let endStr;
+    if (pickupStart.toDateString() === pickupEnd.toDateString()) {
+      // Same day, only show time for end
+      endStr = pickupEnd.toLocaleString("en-IN", { timeStyle: "short" });
+    } else {
+      // Different days, show full date and time
+      endStr = formatDateTime(pickupEnd);
+    }
+    pickupSlot = `${startStr} -> ${endStr}`;
+  } else if (pickupStart) {
+    pickupSlot = formatDateTime(pickupStart);
+  }
   const deliverySlot =
     order.order_status === "delivered" && order.delivered_at
       ? formatDateTime(order.delivered_at)

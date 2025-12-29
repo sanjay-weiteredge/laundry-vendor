@@ -16,6 +16,7 @@ import {
   setRevenuePassword,
   verifyRevenuePassword,
   getTransactionHistory,
+  getTransactionHistoryByDateRange,
 } from "../../services/api";
 
 const formatCurrency = (value) => {
@@ -70,6 +71,13 @@ const Revenue = () => {
   const [settingRevenuePassword, setSettingRevenuePassword] = useState(false);
 
   const [transactionPeriod, setTransactionPeriod] = useState("30");
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [useDateRange, setUseDateRange] = useState(true);
   const [transactionData, setTransactionData] = useState(null);
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [transactionError, setTransactionError] = useState("");
@@ -136,9 +144,7 @@ const Revenue = () => {
   }, [fetchProfile]);
 
   const fetchTransactionHistory = useCallback(async () => {
-    const token = localStorage.getItem("vendorToken");
-    if (!token) {
-      setTransactionError("Missing authentication token. Please log in again.");
+    if (!revenueUnlocked && hasRevenuePassword) {
       return;
     }
 
@@ -146,7 +152,17 @@ const Revenue = () => {
     setTransactionError("");
 
     try {
-      const response = await getTransactionHistory({ token, period: transactionPeriod });
+      const token = localStorage.getItem("vendorToken");
+      if (!token) {
+        setTransactionError("Missing authentication token. Please log in again.");
+        return;
+      }
+
+      const response = await getTransactionHistoryByDateRange({ 
+        token, 
+        startDate,
+        endDate
+      });
       setTransactionData(response.data);
     } catch (apiError) {
       setTransactionError(apiError.message || "Unable to load transaction history.");
@@ -154,13 +170,14 @@ const Revenue = () => {
     } finally {
       setTransactionLoading(false);
     }
-  }, [transactionPeriod]);
+  }, [startDate, endDate, revenueUnlocked, hasRevenuePassword]);
 
+  // Initial load when component mounts and revenue is unlocked
   useEffect(() => {
     if (revenueUnlocked || !hasRevenuePassword) {
       fetchTransactionHistory();
     }
-  }, [transactionPeriod, revenueUnlocked, hasRevenuePassword, fetchTransactionHistory]);
+  }, [revenueUnlocked, hasRevenuePassword]);
 
   const handleVerifyRevenue = async (event) => {
     event.preventDefault();
@@ -424,16 +441,34 @@ const Revenue = () => {
                             View detailed transaction records for delivered orders
                           </small>
                         </div>
-                        <Form.Select
-                          style={{ width: "auto", minWidth: "150px" }}
-                          value={transactionPeriod}
-                          onChange={(e) => setTransactionPeriod(e.target.value)}
-                          disabled={transactionLoading}
-                        >
-                          <option value="30">Last 30 days</option>
-                          <option value="90">Last 90 days</option>
-                          <option value="365">Last 365 days</option>
-                        </Form.Select>
+                        <div className="d-flex gap-2 align-items-end">
+                          <div>
+                            <Form.Label className="small text-muted mb-1">Start Date</Form.Label>
+                            <Form.Control
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              max={endDate}
+                            />
+                          </div>
+                          <div>
+                            <Form.Label className="small text-muted mb-1">End Date</Form.Label>
+                            <Form.Control
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              min={startDate}
+                              max={new Date().toISOString().split('T')[0]}
+                            />
+                          </div>
+                          <Button 
+                            variant="primary" 
+                            onClick={fetchTransactionHistory}
+                            disabled={transactionLoading}
+                          >
+                            {transactionLoading ? 'Loading...' : 'Apply'}
+                          </Button>
+                        </div>
                       </div>
 
                       {transactionError && (

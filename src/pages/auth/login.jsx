@@ -75,7 +75,7 @@ const Login = () => {
                     <Form.Label>Email</Form.Label>
                     <Form.Control
                       type="email"
-                      placeholder="vendor@example.com"
+                      placeholder="Store@example.com"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                     />
