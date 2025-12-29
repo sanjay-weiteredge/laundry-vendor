@@ -11,6 +11,7 @@ import {
   Row,
   Spinner,
 } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import AppNavbar from "../../components/Navbar";
 import {
   getStoreOrders,
@@ -194,6 +195,7 @@ const mapOrderToCard = (order) => {
     status: order.order_status || "pending",
     date: formatDateTime(order.created_at, { timeStyle: undefined }),
     isExpress: Boolean(order.is_express || order.isExpress),
+    isWalkIn: Boolean(order.is_walk_in || order.isWalkIn),
     userName: order.user?.name || order.delivery_address?.full_name || "Customer",
     userPhone: order.user?.phone_number || order.delivery_address?.phone || "",
     userEmail: order.user?.email || "",
@@ -217,6 +219,7 @@ const replaceOrderInState = (setOrders, updatedOrder) => {
 };
 
 const Booking = () => {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -508,22 +511,30 @@ const Booking = () => {
                 Tap a card to inspect order contents and delivery flow.
               </small>
             </div>
-            <Form.Select
-              aria-label="Filter bookings"
-              style={{ width: 240 }}
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-            >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option === "all"
-                        ? "All statuses"
-                        : option === "express"
-                        ? "Express orders"
-                        : STATUS_CONFIG[option]?.label || option}
-                    </option>
-                  ))}
-            </Form.Select>
+            <div className="d-flex gap-2 align-items-center">
+              <Button
+                variant="success"
+                onClick={() => navigate("/create-order")}
+              >
+                + Create New Order
+              </Button>
+              <Form.Select
+                aria-label="Filter bookings"
+                style={{ width: 240 }}
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "all"
+                          ? "All statuses"
+                          : option === "express"
+                          ? "Express orders"
+                          : STATUS_CONFIG[option]?.label || option}
+                      </option>
+                    ))}
+              </Form.Select>
+            </div>
           </div>
 
           {error && (
@@ -550,7 +561,11 @@ const Booking = () => {
                       onClick={() => openBookingDetails(booking)}
                       style={{
                         cursor: "pointer",
-                        backgroundColor: booking.isExpress ? "#fff4e5" : undefined,
+                        backgroundColor: booking.isWalkIn
+                          ? "#e6f0ff"
+                          : booking.isExpress
+                          ? "#fff4e5"
+                          : undefined,
                       }}
                     >
                       <Card.Body>
@@ -558,6 +573,11 @@ const Booking = () => {
                           <div>
                             <p className="text-muted mb-1">{booking.date}</p>
                             <h5 className="mb-0">{booking.customer}</h5>
+                            {booking.isWalkIn && (
+                              <div className="small text-primary fw-semibold">
+                                Walk-in order
+                              </div>
+                            )}
                             {booking.isExpress && (
                               <div className="small text-warning fw-semibold">
                                 Express service

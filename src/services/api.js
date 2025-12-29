@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://backend.thelaundryguyz.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 const jsonHeaders = () => ({
   "Content-Type": "application/json",
@@ -196,6 +196,28 @@ export const getTransactionHistory = async ({ token, period = "30" }) => {
 
   if (!response.ok || data.success === false) {
     throw new Error(data?.message || "Unable to load transaction history.");
+  }
+
+  return data;
+};
+
+export const createOrder = async ({ token, orderData }) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/stores/stores/orders`,
+    {
+      method: "POST",
+      headers: {
+        ...jsonHeaders(),
+        ...authHeaders(token),
+      },
+      body: JSON.stringify(orderData),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.success === false) {
+    throw new Error(data?.message || "Unable to create order.");
   }
 
   return data;
