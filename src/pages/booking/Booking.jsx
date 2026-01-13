@@ -176,16 +176,15 @@ const mapOrderToCard = (order) => {
   if (order.is_walk_in) {
     pickupSlot = formatDateTime(order.created_at);
   } else if (pickupStart && pickupEnd) {
-    const startStr = formatDateTime(pickupStart);
-    let endStr;
+    const startStr = formatDateTime(pickupStart, { dateStyle: 'medium', timeStyle: 'short' });
+    const endStr = pickupEnd.toLocaleString("en-IN", { timeStyle: "short" });
+
     if (pickupStart.toDateString() === pickupEnd.toDateString()) {
-      // Same day, only show time for end
-      endStr = pickupEnd.toLocaleString("en-IN", { timeStyle: "short" });
+      pickupSlot = `${startStr} -> ${endStr}`;
     } else {
-      // Different days, show full date and time
-      endStr = formatDateTime(pickupEnd);
+      // Different days, show full date and time for both
+      pickupSlot = `${startStr} -> ${formatDateTime(pickupEnd)}`;
     }
-    pickupSlot = `${startStr} -> ${endStr}`;
   } else if (pickupStart) {
     pickupSlot = formatDateTime(pickupStart);
   }
@@ -606,6 +605,11 @@ const Booking = () => {
                         </div>
                         <p className="text-muted mb-2">
                           {booking.service} · {booking.weight}
+                          {booking.payment.total > 0 && (
+                            <span className="ms-2 fw-bold text-dark">
+                              {formatCurrency(booking.payment.total)}
+                            </span>
+                          )}
                         </p>
                         <div className="d-flex flex-column gap-1 small">
                           <span>
