@@ -106,7 +106,7 @@ const buildCategories = (order) => {
       label: service?.name || "Laundry service",
       description: service?.description || "Standard service",
       quantity: quantity ?? 0,
-      unitPrice: Number(service?.price ?? 0),
+      unitPrice: null,
       totalAmount: null, // Will be set from order item total_amount
     };
   };
@@ -286,6 +286,40 @@ const Booking = () => {
 
   const handleCategoryServiceChange = () => {};
 
+  const handleCategoryPriceChange = (categoryKey, newPrice) => {
+    setSelectedBooking((prev) => {
+      if (!prev) return prev;
+
+      const updatedCategories = (prev.categories || []).map((category) => {
+        const currentKey = category.key ?? category.id ?? category.label;
+        if (currentKey !== categoryKey) {
+          return category;
+        }
+        const unitPrice = Number(newPrice) || 0;
+        const newTotalAmount = (category.quantity ?? 0) * unitPrice;
+        return {
+          ...category,
+          unitPrice,
+          totalAmount: newTotalAmount,
+        };
+      });
+
+      const subtotal = sumCategorySubtotal(updatedCategories);
+      const serviceFee = Number(prev.payment?.serviceFee ?? 0);
+      const updatedPayment = {
+        ...prev.payment,
+        subtotal,
+        total: subtotal + serviceFee,
+      };
+
+      return {
+        ...prev,
+        categories: updatedCategories,
+        payment: updatedPayment,
+      };
+    });
+  };
+
   const handleAddServiceLine = () => {
     if (!newServiceId) return;
     const service = services.find((s) => String(s.id) === String(newServiceId));
@@ -300,7 +334,7 @@ const Booking = () => {
         label: service.name || "Service",
         description: service.description || "Added service",
         quantity: 0,
-        unitPrice: Number(service.price ?? 0),
+        unitPrice: null,
         totalAmount: null,
       };
       return {
@@ -815,9 +849,7 @@ const Booking = () => {
                                   </div>
                                   <div className="d-flex align-items-start gap-2">
                                     <div className="text-end">
-                                      <small className="text-muted d-block">
-                                        {formatCurrency(category.unitPrice || 0)} each
-                                      </small>
+                                      {/* This space is intentionally left for alignment */}
                                       <span className="fw-semibold">
                                         {formatCurrency(lineTotal)}
                                       </span>
@@ -861,6 +893,16 @@ const Booking = () => {
                                   >
                                     +
                                   </Button>
+                                  <Form.Control
+                                    type="number"
+                                    size="sm"
+                                    value={category.unitPrice || ''}
+                                    onChange={(e) =>
+                                      handleCategoryPriceChange(categoryKey, e.target.value)
+                                    }
+                                    style={{ width: '100px' }}
+                                    placeholder="Enter price"
+                                  />
                                 </div>
                               </div>
                             );
